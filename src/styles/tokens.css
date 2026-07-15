@@ -1,0 +1,41 @@
+:root {
+  --color-bg: #ff6ee4;
+  --color-text: #242424;
+  --color-text-dim: #2e2e2e;
+  --color-rule: #404040;
+  --color-rule-strong: #c93d9e;
+
+  --color-tag-fair-youth: #f2e6a8;
+  --color-tag-dark-lady: #ddc9ee;
+
+  --color-highlight-note: #f5e59a;
+  --color-highlight-note-wash: rgba(230, 200, 60, 0.16);
+  --color-highlight-echo: #307642;
+  --color-highlight-echo-wash: rgba(60, 150, 90, 0.14);
+
+  --color-label-underline: #762cff;
+
+  --font-sans: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 40px;
+  --space-6: 64px;
+
+  --line-height-poem: 36px;
+}
+
+@media (max-width: 860px) {
+  :root {
+    --line-height-poem: 46px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --line-height-poem: 32px;
+  }
+}
