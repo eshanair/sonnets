@@ -37,18 +37,23 @@
     </nav>
     
 
+    <div class="search-wrap">
+      <SearchBox />
+    </div>
+
     <div class="right-controls">
       {#if showTagFilter}
         <TagFilterDropdown />
       {/if}
-      <div class="search-wrap">
-        <SearchBox />
+      <div class="mode-group">
+        {#if $isEditingAllowed}
+          <span class="mode-indicator">editing ·</span>
+          <button class="join-trigger" onclick={() => clearEditPassword()}>log out</button>
+        {:else}
+          <span class="mode-indicator">viewing ·</span>
+          <button class="join-trigger" onclick={() => (joinOpen = true)}>join?</button>
+        {/if}
       </div>
-      {#if $isEditingAllowed}
-        <button class="join-trigger" onclick={() => clearEditPassword()}>editing · log out</button>
-      {:else}
-        <button class="join-trigger" onclick={() => (joinOpen = true)}>join?</button>
-      {/if}
     </div>
   </header>
 
@@ -99,11 +104,24 @@
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    margin-left: auto;
   }
 
   .search-wrap {
     display: flex;
+    margin-left: auto;
+  }
+
+  .mode-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .mode-indicator {
+    font-family: var(--font-serif);
+    font-size: 11px;
+    color: var(--color-text-dim);
+    white-space: nowrap;
   }
 
   .join-trigger {
@@ -131,13 +149,13 @@
 
     .right-controls {
       order: 2;
-      flex-wrap: wrap;
-      width: 100%;
-      justify-content: flex-end;
+      margin-left: auto;
     }
 
     .search-wrap {
       order: 3;
+      margin-left: 0;
+      margin-top: var(--space-2);
       flex-basis: 100%;
       width: 100%;
     }

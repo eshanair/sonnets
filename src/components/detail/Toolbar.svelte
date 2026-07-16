@@ -124,6 +124,10 @@
   }
 
   @media (max-width: 640px) {
+    .toolbar {
+      row-gap: 4px;
+    }
+
     .tool-group {
       flex-basis: 100%;
       justify-content: flex-end;

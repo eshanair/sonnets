@@ -1,7 +1,6 @@
 import type p5 from 'p5';
 
-const BLACKLETTER_FONT_URL =
-  'https://raw.githubusercontent.com/google/fonts/main/ofl/unifrakturmaguntia/UnifrakturMaguntia-Book.ttf';
+const BLACKLETTER_FONT_URL = '/fonts/Canterbury-Regular.ttf';
 
 // Same 4-arm curl path (plus a faster secondary harmonic for filigree) as the
 // original sketch, adapted to p5 instance mode so one canvas can be reused

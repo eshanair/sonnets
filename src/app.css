@@ -1,5 +1,11 @@
 @import './styles/tokens.css';
 
+@font-face {
+  font-family: 'Canterbury';
+  src: url('/fonts/Canterbury-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+
 * {
   box-sizing: border-box;
 }

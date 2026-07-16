@@ -6,6 +6,15 @@
   import TagLegend from './TagLegend.svelte';
   import SonnetRow from './SonnetRow.svelte';
   import SonnetHoverArt from './SonnetHoverArt.svelte';
+  import AboutPopover from '../shell/AboutPopover.svelte';
+
+  let aboutOpen = $state(false);
+  let aboutAnchor = $state<DOMRect | null>(null);
+
+  function openAbout(e: MouseEvent) {
+    aboutAnchor = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    aboutOpen = true;
+  }
 
   let filtered = $derived(
     $activeTagFilter === 'All'
@@ -47,7 +56,7 @@
   <aside class="side">
     <div class="mobile-heading">
       <span class="mobile-title">The Sonnet Project</span>
-      <span class="mobile-tagline">by esha</span>
+      <button class="mobile-tagline" onclick={openAbout}>about this site</button>
     </div>
     <ImagePlaceholder />
     <TagLegend />
@@ -66,6 +75,10 @@
 </div>
 
 <SonnetHoverArt lines={hoverLines} visible={!!hoveredSonnet} />
+
+{#if aboutOpen && aboutAnchor}
+  <AboutPopover anchorRect={aboutAnchor} onClose={() => (aboutOpen = false)} />
+{/if}
 
 <style>
   .list-view {
@@ -115,17 +128,22 @@
     }
 
     .mobile-title {
-      font-family: 'UnifrakturMaguntia', cursive;
+      font-family: 'Canterbury', cursive;
       font-size: 20px;
       color: #000;
       white-space: nowrap;
     }
 
     .mobile-tagline {
-      font-family: var(--font-sans);
-      font-size: 11px;
-      color: var(--color-text-dim);
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 12px;
+      color: var(--color-rule-strong);
       text-align: right;
+    }
+
+    .mobile-tagline:hover {
+      color: var(--color-text);
     }
 
     .side :global(.image-placeholder) {

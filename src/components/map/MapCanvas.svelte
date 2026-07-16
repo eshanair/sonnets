@@ -32,7 +32,7 @@
   let nodes = $state<Node[]>([]);
   let linkPositions = $state<Array<{ id: string; x1: number; y1: number; x2: number; y2: number; weight: number }>>([]);
   let transform = $state({ x: 0, y: 0, k: 1 });
-  let hoveredEdge = $state<{ a: number; b: number } | null>(null);
+  let hoveredEdge = $state<MapEdge | null>(null);
   let hoveredNode = $state<number | null>(null);
 
   let simulation: ReturnType<typeof forceSimulation<Node>> | undefined;
@@ -143,7 +143,7 @@
           stroke-width={0.75 + (Math.log(l.weight + 1) / Math.log(mw + 1)) * 2}
           onmouseenter={() => {
             const [a, b] = l.id.split('-').map(Number);
-            hoveredEdge = { a, b };
+            hoveredEdge = edges.find((e) => e.a === a && e.b === b) ?? { a, b, weight: 1, notes: [] };
           }}
           onmouseleave={() => (hoveredEdge = null)}
           role="presentation"
@@ -171,9 +171,16 @@
 
   {#if hoveredNode !== null}
     {@const s = getSonnet(hoveredNode)}
-    <p class="edge-label">Sonnet {hoveredNode}{s ? ` — ${s.lines[0]}` : ''}</p>
+    <div class="edge-label">
+      <p class="edge-title">Sonnet {hoveredNode}{s ? ` — ${s.lines[0]}` : ''}</p>
+    </div>
   {:else if hoveredEdge}
-    <p class="edge-label">Sonnet {hoveredEdge.a} — Sonnet {hoveredEdge.b}</p>
+    <div class="edge-label">
+      <p class="edge-title">Sonnet {hoveredEdge.a} — Sonnet {hoveredEdge.b}</p>
+      {#each hoveredEdge.notes as note}
+        <p class="edge-note">&ldquo;{note}&rdquo;</p>
+      {/each}
+    </div>
   {/if}
 </div>
 
@@ -233,14 +240,26 @@
     left: 50%;
     transform: translateX(-50%);
     max-width: calc(100% - var(--space-4));
+    background: var(--color-bg);
+    padding: 4px 10px;
+    border: 1px solid var(--color-rule);
+  }
+
+  .edge-title {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     font-family: var(--font-sans);
     font-size: 12px;
     color: var(--color-text);
-    background: var(--color-bg);
-    padding: 4px 10px;
-    border: 1px solid var(--color-rule);
+  }
+
+  .edge-note {
+    margin-top: 2px;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 12px;
+    color: var(--color-text);
+    text-align: center;
   }
 </style>

@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import type { StaticSonnet } from '../../lib/types';
+  import type { AnnotatedSpan, StaticSonnet } from '../../lib/types';
   import { userData, addAnnotation, addConnection } from '../../stores/userData';
   import { spansForSonnet } from '../../lib/connections';
   import { computeLineSegments } from '../../lib/segments';
   import { getStructuralGroups } from '../../lib/rhymeStructure';
   import { selectionToLineCharRange, type LineCharRange } from '../../lib/textRange';
-  import { armedTool, pendingLink, disarm } from '../../stores/selection';
+  import { armedTool, pendingLink, disarm, echoPreview } from '../../stores/selection';
   import SonnetLine from './SonnetLine.svelte';
   import VoltaMarker from './VoltaMarker.svelte';
 
@@ -25,7 +25,16 @@
   // closing couplet starts, so those two lines can be set with the
   // traditional typographic indent.
   let coupletGroup = $derived(getStructuralGroups(lineCount).find((g) => g.label === 'C'));
-  let spans = $derived(spansForSonnet($userData, sonnet.number));
+  // A Find Echoes search hasn't created a real connection yet, so the source
+  // line it's searching from wouldn't otherwise show any highlight while the
+  // popover is open — this previews it as a plain echo span (same green wash
+  // as a real connection) for as long as the popover stays open.
+  let previewSpan = $derived<AnnotatedSpan[]>(
+    $echoPreview && $echoPreview.sonnet === sonnet.number
+      ? [{ id: '__echo-preview__', lineStart: $echoPreview.lineStart, lineEnd: $echoPreview.lineEnd, charStart: $echoPreview.charStart, charEnd: $echoPreview.charEnd, kind: 'echo' }]
+      : [],
+  );
+  let spans = $derived([...spansForSonnet($userData, sonnet.number), ...previewSpan]);
   let lineSegments = $derived(sonnet.lines.map((text, i) => computeLineSegments(text, i, spans)));
 
   let gridEl: HTMLElement;

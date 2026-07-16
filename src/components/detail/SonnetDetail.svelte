@@ -2,6 +2,7 @@
   import { getSonnet } from '../../data/sonnets';
   import { userData, getSonnetUserData } from '../../stores/userData';
   import { navigate } from '../../stores/route';
+  import { echoPreview } from '../../stores/selection';
   import type { Endpoint } from '../../lib/types';
   import SonnetHeader from './SonnetHeader.svelte';
   import SonnetTags from './SonnetTags.svelte';
@@ -29,11 +30,20 @@
     text: string;
     rect: DOMRect;
   }) {
-    echoState = {
-      sourceEndpoint: { sonnet: number, lineStart: args.lineStart, lineEnd: args.lineEnd, charStart: args.charStart, charEnd: args.charEnd },
-      sourceText: args.text,
-      anchorRect: args.rect,
+    const sourceEndpoint: Endpoint = {
+      sonnet: number,
+      lineStart: args.lineStart,
+      lineEnd: args.lineEnd,
+      charStart: args.charStart,
+      charEnd: args.charEnd,
     };
+    echoState = { sourceEndpoint, sourceText: args.text, anchorRect: args.rect };
+    echoPreview.set(sourceEndpoint);
+  }
+
+  function closeEcho() {
+    echoState = null;
+    echoPreview.set(null);
   }
 </script>
 
@@ -70,7 +80,7 @@
       sourceEndpoint={echoState.sourceEndpoint}
       sourceText={echoState.sourceText}
       anchorRect={echoState.anchorRect}
-      onClose={() => (echoState = null)}
+      onClose={closeEcho}
     />
   {/if}
 {/if}

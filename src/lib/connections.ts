@@ -30,10 +30,12 @@ export interface MapEdge {
   a: number;
   b: number;
   weight: number;
+  notes: string[];
 }
 
 // De-duplicates the flat connection list into one edge per unordered sonnet pair,
-// weighted by how many line-level connections exist between them.
+// weighted by how many line-level connections exist between them, and collects
+// any notes attached to those connections for display on hover.
 export function deriveMapEdges(data: UserData): MapEdge[] {
   const weights = new Map<string, MapEdge>();
   for (const c of data.connections) {
@@ -41,8 +43,13 @@ export function deriveMapEdges(data: UserData): MapEdge[] {
     const hi = Math.max(c.a.sonnet, c.b.sonnet);
     const key = `${lo}-${hi}`;
     const existing = weights.get(key);
-    if (existing) existing.weight += 1;
-    else weights.set(key, { a: lo, b: hi, weight: 1 });
+    const note = c.note?.trim();
+    if (existing) {
+      existing.weight += 1;
+      if (note) existing.notes.push(note);
+    } else {
+      weights.set(key, { a: lo, b: hi, weight: 1, notes: note ? [note] : [] });
+    }
   }
   return [...weights.values()];
 }
