@@ -58,6 +58,13 @@ export interface Tag {
 // remove Fair Youth/Dark Lady from an individual sonnet.
 export const LOCKED_TAGS = ['Fair Youth', 'Dark Lady'];
 
+// Shown on hover wherever these two built-in tags appear, since the split
+// isn't self-explanatory to anyone not already familiar with the sonnets.
+export const TAG_DESCRIPTIONS: Record<string, string> = {
+  'Fair Youth': 'Sonnets 1–126, addressed to a beautiful young man — themes of beauty, love, and the passage of time.',
+  'Dark Lady': 'Sonnets 127–154, addressed to a mysterious, dark-featured woman — a more conflicted, often anguished love.',
+};
+
 export interface SonnetUserData {
   voltaLine: number; // 1-indexed
   tags: string[];

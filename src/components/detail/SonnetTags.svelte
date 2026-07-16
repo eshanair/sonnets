@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { LOCKED_TAGS } from '../../lib/types';
+  import { LOCKED_TAGS, TAG_DESCRIPTIONS } from '../../lib/types';
   import { userData, toggleSonnetTag, getSonnetUserData } from '../../stores/userData';
   import { isEditingAllowed } from '../../stores/auth';
   import TagDot from '../common/TagDot.svelte';
+  import Tooltip from '../common/Tooltip.svelte';
   import NewTagControl from '../list/NewTagControl.svelte';
 
   let { number }: { number: number } = $props();
@@ -50,8 +51,15 @@
             disabled={locked || !$isEditingAllowed}
             onchange={() => toggleSonnetTag(number, tag.name)}
           />
-          <TagDot color={tag.color} />
-          <span>{tag.name}</span>
+          {#if TAG_DESCRIPTIONS[tag.name]}
+            <Tooltip text={TAG_DESCRIPTIONS[tag.name]}>
+              <TagDot color={tag.color} />
+              <span>{tag.name}</span>
+            </Tooltip>
+          {:else}
+            <TagDot color={tag.color} />
+            <span>{tag.name}</span>
+          {/if}
         </label>
       {/each}
       <hr class="hairline" />

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { userData } from '../../stores/userData';
+  import { TAG_DESCRIPTIONS } from '../../lib/types';
   import TagDot from '../common/TagDot.svelte';
+  import Tooltip from '../common/Tooltip.svelte';
   import NewTagControl from './NewTagControl.svelte';
 </script>
 
@@ -9,8 +11,15 @@
   <ul>
     {#each $userData.tags as tag (tag.name)}
       <li>
-        <TagDot color={tag.color} />
-        <span>{tag.name}</span>
+        {#if TAG_DESCRIPTIONS[tag.name]}
+          <Tooltip text={TAG_DESCRIPTIONS[tag.name]}>
+            <TagDot color={tag.color} />
+            <span>{tag.name}</span>
+          </Tooltip>
+        {:else}
+          <TagDot color={tag.color} />
+          <span>{tag.name}</span>
+        {/if}
       </li>
     {/each}
   </ul>

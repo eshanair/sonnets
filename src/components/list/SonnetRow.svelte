@@ -1,10 +1,11 @@
 <script lang="ts">
   import type { StaticSonnet } from '../../lib/types';
-  import { LOCKED_TAGS } from '../../lib/types';
+  import { LOCKED_TAGS, TAG_DESCRIPTIONS } from '../../lib/types';
   import { userData, toggleSonnetTag, getSonnetUserData } from '../../stores/userData';
   import { navigate } from '../../stores/route';
   import { isEditingAllowed } from '../../stores/auth';
   import TagDot from '../common/TagDot.svelte';
+  import Tooltip from '../common/Tooltip.svelte';
 
   let { sonnet }: { sonnet: StaticSonnet } = $props();
 
@@ -62,8 +63,15 @@
             disabled={locked || !$isEditingAllowed}
             onchange={() => toggleSonnetTag(sonnet.number, tag.name)}
           />
-          <TagDot color={tag.color} />
-          {tag.name}
+          {#if TAG_DESCRIPTIONS[tag.name]}
+            <Tooltip text={TAG_DESCRIPTIONS[tag.name]}>
+              <TagDot color={tag.color} />
+              {tag.name}
+            </Tooltip>
+          {:else}
+            <TagDot color={tag.color} />
+            {tag.name}
+          {/if}
         </label>
       {/each}
     </div>
