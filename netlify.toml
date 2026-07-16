@@ -6,6 +6,13 @@
 [functions]
   node_bundler = "esbuild"
 
+[dev]
+  command = "npm run dev"
+  targetPort = 5173
+  port = 8888
+  publish = "dist"
+  autoLaunch = false
+
 [[redirects]]
   from = "/api/data"
   to = "/.netlify/functions/data"
