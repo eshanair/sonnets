@@ -15,8 +15,8 @@
 
 <div class="explored-view">
   <p class="explanation">
-    Ranked by how much you've engaged with each sonnet — notes, labels, tags, and connections all
-    count. The ones you return to rise to the top; untouched sonnets sit at 0.
+    Ranked by engagement with each sonnet — notes, labels, tags, and connection
+    count. Ones returned to the most rise to the top; untouched sonnets sit at 0.
   </p>
   {#each ranked as sonnet (sonnet.number)}
     <ExploredRow {sonnet} count={$annotationCounts[sonnet.number] ?? 0} />
