@@ -68,7 +68,7 @@
 
 <div class="toolbar">
   <div class="tool-group">
-    <span class="group-label">Highlight</span>
+    <span class="group-label" class:disabled={!$isEditingAllowed}>Highlight</span>
     {#each HIGHLIGHT_COLORS as c (c.name)}
       <button
         class="swatch"
@@ -85,7 +85,6 @@
     class="tool echo"
     class:active={isArmed({ kind: 'echo' })}
     onclick={() => toggle({ kind: 'echo' })}
-    disabled={!$isEditingAllowed}
   >
     Find Echoes
   </button>
@@ -136,6 +135,10 @@
     font-size: 12px;
     color: var(--color-text-dim);
     margin-right: 2px;
+  }
+
+  .group-label.disabled {
+    opacity: 0.4;
   }
 
   .swatch {

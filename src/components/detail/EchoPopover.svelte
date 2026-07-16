@@ -2,6 +2,7 @@
   import { findEchoes } from '../../lib/echoSearch';
   import { addConnection, updateConnectionNote } from '../../stores/userData';
   import { pendingLink, disarm } from '../../stores/selection';
+  import { isEditingAllowed } from '../../stores/auth';
   import type { Endpoint } from '../../lib/types';
 
   let {
@@ -74,7 +75,7 @@
       <ul>
         {#each candidates as c (c.sonnet + '-' + c.lineIndex)}
           <li>
-            <button onclick={() => confirm(c.sonnet, c.lineIndex, c.lineText)}>
+            <button onclick={() => confirm(c.sonnet, c.lineIndex, c.lineText)} disabled={!$isEditingAllowed}>
               <span class="sonnet-no">Sonnet {c.sonnet}</span>
               <span class="line-text">{c.lineText}</span>
             </button>
@@ -84,7 +85,9 @@
     {/if}
 
     <div class="actions">
-      <button class="manual" onclick={manualLink}>Or find it yourself — navigate &amp; select a line</button>
+      {#if $isEditingAllowed}
+        <button class="manual" onclick={manualLink}>Or find it yourself — navigate &amp; select a line</button>
+      {/if}
       <button class="cancel" onclick={onClose}>Cancel</button>
     </div>
   {/if}
@@ -103,7 +106,7 @@
     width: min(320px, calc(100vw - 32px));
     max-height: 360px;
     overflow-y: auto;
-    background: var(--color-bg);
+    background: #fff;
     border: 1px solid var(--color-rule-strong);
     padding: var(--space-3);
   }
@@ -155,6 +158,12 @@
 
   li button:hover {
     background: var(--color-highlight-echo-wash);
+  }
+
+  li button:disabled {
+    opacity: 0.4;
+    cursor: default;
+    background: none;
   }
 
   .sonnet-no {

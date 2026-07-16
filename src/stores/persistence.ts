@@ -1,7 +1,16 @@
 import { get } from 'svelte/store';
-import type { SonnetUserData, UserData } from '../lib/types';
+import type { SonnetUserData, Tag, UserData } from '../lib/types';
 import { DEFAULT_VOLTA_LINE } from '../lib/rhymeStructure';
 import { editPassword, clearEditPassword } from './auth';
+
+// Canonical built-in tags — always present in UserData.tags, regardless of
+// what's in the saved/remote blob. Locked (see LOCKED_TAGS in lib/types.ts):
+// there's no UI to remove or rename these, but older or hand-edited data
+// could still lack them, so migrate() below re-adds any that are missing.
+const DEFAULT_TAGS: Tag[] = [
+  { name: 'Fair Youth', color: '#f2e6a8' },
+  { name: 'Dark Lady', color: '#ddc9ee' },
+];
 
 // Bumped to v2 to discard accumulated test-session data and start clean
 // with the seeded Fair Youth/Dark Lady defaults applied from a blank slate.
@@ -24,10 +33,7 @@ function defaultSonnetData(): Record<number, SonnetUserData> {
 export function defaultUserData(): UserData {
   return {
     version: 1,
-    tags: [
-      { name: 'Fair Youth', color: '#f2e6a8' },
-      { name: 'Dark Lady', color: '#ddc9ee' },
-    ],
+    tags: [...DEFAULT_TAGS],
     customLabels: [],
     sonnetData: defaultSonnetData(),
     connections: [],
@@ -69,6 +75,12 @@ function migrate(raw: unknown): UserData | null {
   if (data.version !== 1) return null;
   if (!data.tags || !data.sonnetData || !data.connections) return null;
   if (!data.customLabels) data.customLabels = [];
+  // Re-add any built-in tag missing from saved/remote data (e.g. data
+  // predating one of these, or a hand-edited blob) — they're locked and
+  // must always exist for their sonnets' tag dots to render.
+  for (const t of DEFAULT_TAGS) {
+    if (!data.tags.some((existing) => existing.name === t.name)) data.tags = [...data.tags, t];
+  }
   // Fill in any sonnet the user hasn't touched yet with the seeded default;
   // any sonnet already present in their saved data is left exactly as-is.
   data.sonnetData = { ...defaultSonnetData(), ...data.sonnetData };

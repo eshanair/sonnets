@@ -34,7 +34,9 @@
     {#each tagObjs as tag (tag.name)}
       <TagDot color={tag.color} title={tag.name} />
     {/each}
-    <span class="add-icon">+</span>
+    {#if $isEditingAllowed}
+      <span class="add-icon">+</span>
+    {/if}
   </button>
 
   {#if open}
