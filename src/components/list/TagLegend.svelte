@@ -32,7 +32,7 @@
   }
 
   .legend-title {
-    font-family: var(--font-sans);
+    font-family: var(--font-mono);
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.06em;

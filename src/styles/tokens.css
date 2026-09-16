@@ -17,6 +17,13 @@
 
   --font-sans: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-serif: Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Fixed up to ~1410px viewport width (matches the 1100px column this was
+     tuned at), then grows moderately on large/ultra-wide monitors instead of
+     sitting as a fixed island — capped so it never gets wide enough to hurt
+     the narrower reading columns nested inside. */
+  --shell-width: clamp(1100px, 78vw, 1480px);
 
   --space-1: 4px;
   --space-2: 8px;

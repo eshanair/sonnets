@@ -76,7 +76,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-3) var(--space-4);
-    max-width: 1100px;
+    max-width: var(--shell-width);
     margin: 0 auto;
     padding: var(--space-4);
     flex-wrap: wrap;

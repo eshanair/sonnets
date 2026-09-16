@@ -46,7 +46,7 @@
 
 <style>
   .shell {
-    max-width: 1100px;
+    max-width: var(--shell-width);
     margin: 0 auto;
     min-height: 100vh;
   }

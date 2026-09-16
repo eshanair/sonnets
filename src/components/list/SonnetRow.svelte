@@ -100,7 +100,7 @@
   }
 
   .number {
-    font-family: var(--font-sans);
+    font-family: var(--font-mono);
     font-size: 12px;
     color: var(--color-text-dim);
     flex: none;

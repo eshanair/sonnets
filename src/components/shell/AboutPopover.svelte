@@ -50,7 +50,7 @@
     position: fixed;
     z-index: 121;
     background: #fff;
-    border: 1px solid #000;
+    border: 1px solid var(--color-rule-strong);
     padding: var(--space-3);
   }
 

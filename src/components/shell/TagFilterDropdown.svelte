@@ -16,7 +16,7 @@
     font-size: 12px;
     color: var(--color-text);
     background: #fff;
-    border: 1px solid #000;
+    border: 1px solid var(--color-rule-strong);
     border-radius: 0;
     padding: var(--space-1) var(--space-2);
     cursor: pointer;

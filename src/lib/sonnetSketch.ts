@@ -9,12 +9,21 @@ export interface SonnetSketchInstance extends p5 {
   setText: (lines: string[]) => void;
 }
 
+interface TracedPath {
+  pts: { x: number; y: number }[];
+  arc: number[];
+  angles: number[];
+  total: number;
+}
+
 export function sonnetSketch(size: number, initialLines: string[], fontScale = 0.06) {
   // p5's instance-mode typings don't cleanly model assigning `preload`/`setup`/`draw`
   // as plain properties or loadFont's dual sync-in-preload behavior, so the sketch
   // body works against the real runtime API via `any` rather than fighting the types.
   return (p: any) => {
     let font: unknown;
+
+    // Primary path: the sonnet's own text flows along this one, exactly as before.
     let pathPts: { x: number; y: number }[] = [];
     let arcLen: number[] = [];
     let angles: number[] = [];
@@ -22,59 +31,85 @@ export function sonnetSketch(size: number, initialLines: string[], fontScale = 0
     let flowText = '';
     let widthsCum: number[] = [];
     let scrollOffset = 0;
+
+    // Secondary path: a fainter, counter-rotating depth layer carrying a small
+    // repeating motif rather than sonnet text — pure ornament, never competes
+    // for attention with the primary flow.
+    let path2Pts: { x: number; y: number }[] = [];
+    let arcLen2: number[] = [];
+    let angles2: number[] = [];
+    let path2Total = 0;
+    let ornamentText = '';
+    let ornamentWidths: number[] = [];
+    let scrollOffset2 = 0;
+
+    let noiseTime = 0;
     let pendingLines: string[] | null = null;
     const speed = 0.6;
     const fontSize = size * fontScale;
 
-    function buildPath() {
+    // Traces one closed hypotrochoid-style curl (4-lobed main term + a faster
+    // harmonic for filigree) and returns it as points + cumulative arc length +
+    // per-segment tangent angles — shared by both the primary and secondary
+    // paths so they're the same math with different constants, not duplicated.
+    function tracePath(params: {
+      d1: number;
+      k2: number;
+      d2: number;
+      n: number;
+      reverse?: boolean;
+    }): TracedPath {
       const R = 4;
       const r = 1;
       const k1 = (R - r) / r;
-      const d1 = 2.2;
-      const k2 = 7;
-      const d2 = 0.3;
-      const n = 4000;
+      const { d1, k2, d2, n, reverse } = params;
+      const dir = reverse ? -1 : 1;
       const scale = (Math.min(p.width, p.height) * 0.4) / (R - r + d1 + d2);
 
-      pathPts = [];
+      const pts: { x: number; y: number }[] = [];
       for (let i = 0; i <= n; i++) {
-        const t = (i / n) * p.TWO_PI;
+        const t = dir * (i / n) * p.TWO_PI;
         const x = (R - r) * p.cos(t) + d1 * p.cos(k1 * t) + d2 * p.cos(k2 * t);
         const y = (R - r) * p.sin(t) - d1 * p.sin(k1 * t) - d2 * p.sin(k2 * t);
-        pathPts.push({ x: x * scale, y: y * scale });
+        pts.push({ x: x * scale, y: y * scale });
       }
 
-      arcLen = [0];
-      angles = [];
-      for (let i = 0; i < pathPts.length - 1; i++) {
-        const dx = pathPts[i + 1].x - pathPts[i].x;
-        const dy = pathPts[i + 1].y - pathPts[i].y;
-        arcLen.push(arcLen[i] + Math.sqrt(dx * dx + dy * dy));
-        angles.push(Math.atan2(dy, dx));
+      const arc = [0];
+      const pathAngles: number[] = [];
+      for (let i = 0; i < pts.length - 1; i++) {
+        const dx = pts[i + 1].x - pts[i].x;
+        const dy = pts[i + 1].y - pts[i].y;
+        arc.push(arc[i] + Math.sqrt(dx * dx + dy * dy));
+        pathAngles.push(Math.atan2(dy, dx));
       }
-      angles.push(angles[angles.length - 1] ?? 0);
-      pathTotal = arcLen[arcLen.length - 1];
+      pathAngles.push(pathAngles[pathAngles.length - 1] ?? 0);
+      return { pts, arc, angles: pathAngles, total: arc[arc.length - 1] };
     }
 
-    function getPointAtDistance(d: number) {
-      const dist = ((d % pathTotal) + pathTotal) % pathTotal;
+    function pointAtDistance(path: TracedPath, d: number) {
+      const { pts, arc, angles: pathAngles, total } = path;
+      const dist = ((d % total) + total) % total;
       let lo = 0;
-      let hi = arcLen.length - 1;
+      let hi = arc.length - 1;
       while (lo < hi - 1) {
         const mid = (lo + hi) >> 1;
-        if (arcLen[mid] <= dist) lo = mid;
+        if (arc[mid] <= dist) lo = mid;
         else hi = mid;
       }
-      const segStart = arcLen[lo];
-      const segEnd = arcLen[lo + 1] !== undefined ? arcLen[lo + 1] : pathTotal;
+      const segStart = arc[lo];
+      const segEnd = arc[lo + 1] !== undefined ? arc[lo + 1] : total;
       const frac = segEnd > segStart ? (dist - segStart) / (segEnd - segStart) : 0;
-      const p0 = pathPts[lo];
-      const p1 = pathPts[lo + 1] || pathPts[0];
+      const p0 = pts[lo];
+      const p1 = pts[lo + 1] || pts[0];
       return {
         x: p0.x + (p1.x - p0.x) * frac,
         y: p0.y + (p1.y - p0.y) * frac,
-        angle: angles[lo],
+        angle: pathAngles[lo],
       };
+    }
+
+    function getPointAtDistance(d: number) {
+      return pointAtDistance({ pts: pathPts, arc: arcLen, angles, total: pathTotal }, d);
     }
 
     // Measures one character's placement footprint along the path — used both
@@ -84,6 +119,22 @@ export function sonnetSketch(size: number, initialLines: string[], fontScale = 0
     function charStep(ch: string): number {
       const extra = ch === ' ' ? fontSize * 0.6 : 0;
       return p.textWidth(ch) + 0.8 + extra;
+    }
+
+    function buildPath() {
+      const primary = tracePath({ d1: 2.2, k2: 7, d2: 0.3, n: 4000 });
+      pathPts = primary.pts;
+      arcLen = primary.arc;
+      angles = primary.angles;
+      pathTotal = primary.total;
+
+      // Tighter, counter-rotating twin — smaller curl amplitude and a faster
+      // ripple so it reads as a distinct, quieter echo of the primary curl.
+      const secondary = tracePath({ d1: 1.1, k2: 5, d2: 0.15, n: 2000, reverse: true });
+      path2Pts = secondary.pts;
+      arcLen2 = secondary.arc;
+      angles2 = secondary.angles;
+      path2Total = secondary.total;
     }
 
     // Builds the flow text word-by-word (cycling back to the start with a small
@@ -135,6 +186,34 @@ export function sonnetSketch(size: number, initialLines: string[], fontScale = 0
       widthsCum = cum;
     }
 
+    // Lays a short recurring motif around the whole secondary path once — it
+    // doesn't depend on the sonnet's text, so (unlike buildFlowText) this only
+    // needs to run once after the path exists, not on every setText().
+    function buildOrnament() {
+      p.textFont(font || 'Georgia');
+      p.textSize(fontSize * 0.8);
+
+      const motif = '· ';
+      const limit = Math.max(path2Total - 10, 0);
+      let t = '';
+      const cum: number[] = [0];
+      let acc = 0;
+
+      while (acc < limit) {
+        let width = 0;
+        for (const ch of motif) width += charStep(ch);
+        if (acc + width > limit) break;
+        for (const ch of motif) {
+          acc += charStep(ch);
+          t += ch;
+          cum.push(acc);
+        }
+      }
+
+      ornamentText = t;
+      ornamentWidths = cum;
+    }
+
     p.setup = async () => {
       const canvas = p.createCanvas(size, size);
       canvas.style('pointer-events', 'none');
@@ -146,6 +225,7 @@ export function sonnetSketch(size: number, initialLines: string[], fontScale = 0
         font = undefined;
       }
       buildPath();
+      buildOrnament();
       // setText() may have already been called (e.g. hovering a row) while this
       // async setup was still awaiting the font — apply whatever came in during
       // that window instead of the stale initial lines.
@@ -157,20 +237,59 @@ export function sonnetSketch(size: number, initialLines: string[], fontScale = 0
       p.clear();
       if (!flowText || pathTotal === 0) return;
 
+      noiseTime += 0.006;
+
       p.push();
       p.translate(p.width / 2, p.height / 2);
+      p.noStroke();
+
+      // Faint counter-rotating secondary path first, so the primary flow draws
+      // on top of it — a quiet depth layer, not a second focal point.
+      if (ornamentText && path2Total > 0) {
+        p.push();
+        p.fill(120, 220, 50, 70);
+        p.textFont(font || 'Georgia');
+        p.textSize(fontSize * 0.8);
+        const path2: TracedPath = { pts: path2Pts, arc: arcLen2, angles: angles2, total: path2Total };
+        for (let j = 0; j < ornamentText.length; j++) {
+          const ch = ornamentText[j];
+          if (ch === ' ') continue;
+          const pt = pointAtDistance(path2, ornamentWidths[j] + scrollOffset2);
+          p.push();
+          p.translate(pt.x, pt.y);
+          p.rotate(pt.angle);
+          p.text(ch, 0, 0);
+          p.pop();
+        }
+        p.pop();
+        scrollOffset2 = (scrollOffset2 - speed * 0.6 + path2Total) % path2Total;
+      }
+
+      // Subtle noise-driven brightness drift — still unmistakably the same
+      // lime green, just breathing rather than a flat constant fill.
+      const colorNoise = p.noise(noiseTime, 900);
+      const g = 205 + colorNoise * 35;
+      const r = 100 + colorNoise * 35;
+      p.fill(r, g, 50, 225);
       p.textFont(font || 'Georgia');
       p.textSize(fontSize);
-      p.fill(120, 220, 50, 225);
-      p.noStroke();
 
       for (let j = 0; j < flowText.length; j++) {
         const ch = flowText[j];
         if (ch === ' ') continue;
         const pt = getPointAtDistance(widthsCum[j] + scrollOffset);
+
+        // A few px of positional drift and a touch of rotational jitter, both
+        // driven by smooth noise seeded per-character so neighbours wobble
+        // coherently instead of flickering independently — the single biggest
+        // lever for making the flow read as hand-drawn rather than mechanical.
+        const nx = p.noise(j * 0.15, noiseTime) - 0.5;
+        const ny = p.noise(j * 0.15 + 40, noiseTime) - 0.5;
+        const nr = p.noise(j * 0.15 + 80, noiseTime) - 0.5;
+
         p.push();
-        p.translate(pt.x, pt.y);
-        p.rotate(pt.angle);
+        p.translate(pt.x + nx * 3, pt.y + ny * 3);
+        p.rotate(pt.angle + nr * 0.15);
         p.text(ch, 0, 0);
         p.pop();
       }

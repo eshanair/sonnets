@@ -115,7 +115,7 @@
     position: fixed;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 56px;
+    font-size: clamp(40px, 4vw, 56px);
     line-height: 1;
     color: var(--color-rule-strong);
     padding: var(--space-3);

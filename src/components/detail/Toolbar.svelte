@@ -191,7 +191,7 @@
     font-size: 12px;
     color: var(--color-text-dim);
     background: #fff;
-    border: 1px solid #000;
+    border: 1px solid var(--color-rule-strong);
     border-radius: 0;
     padding: 3px var(--space-2);
     cursor: pointer;
