@@ -58,3 +58,33 @@ export function deriveMapEdges(data: UserData): MapEdge[] {
   }
   return [...weights.values()];
 }
+
+export interface ConnectionHubLink {
+  other: number;
+  note?: string;
+}
+
+export interface ConnectionHub {
+  sonnet: number;
+  links: ConnectionHubLink[];
+}
+
+// One hub per sonnet that has at least one connection, listing every sonnet
+// it's linked to from its own perspective — a connection between 5 and 20
+// therefore appears under both hubs, the same "from this sonnet's point of
+// view" framing connectionsForSonnet already uses for the margin. Sorted by
+// sonnet number so this reads as an ordered catalog, distinct from the
+// ranked-by-engagement list.
+export function deriveConnectionHierarchy(data: UserData): ConnectionHub[] {
+  const sonnetNumbers = [...new Set(data.connections.flatMap((c) => [c.a.sonnet, c.b.sonnet]))].sort(
+    (a, b) => a - b,
+  );
+
+  return sonnetNumbers.map((sonnet) => ({
+    sonnet,
+    links: connectionsForSonnet(data, sonnet).map(({ connection, other }) => ({
+      other: other.sonnet,
+      note: connection.note?.trim() || undefined,
+    })),
+  }));
+}
