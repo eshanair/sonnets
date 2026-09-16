@@ -26,16 +26,21 @@ export function spansForSonnet(data: UserData, sonnet: number): AnnotatedSpan[] 
   return [...annotationSpans, ...connectionSpans];
 }
 
+export interface MapEdgeNote {
+  id: string; // the underlying connection's id, so the note can be edited in place
+  text: string;
+}
+
 export interface MapEdge {
   a: number;
   b: number;
   weight: number;
-  notes: string[];
+  notes: MapEdgeNote[];
 }
 
 // De-duplicates the flat connection list into one edge per unordered sonnet pair,
 // weighted by how many line-level connections exist between them, and collects
-// any notes attached to those connections for display on hover.
+// any notes attached to those connections for display (and editing) on hover.
 export function deriveMapEdges(data: UserData): MapEdge[] {
   const weights = new Map<string, MapEdge>();
   for (const c of data.connections) {
@@ -46,9 +51,9 @@ export function deriveMapEdges(data: UserData): MapEdge[] {
     const note = c.note?.trim();
     if (existing) {
       existing.weight += 1;
-      if (note) existing.notes.push(note);
+      if (note) existing.notes.push({ id: c.id, text: note });
     } else {
-      weights.set(key, { a: lo, b: hi, weight: 1, notes: note ? [note] : [] });
+      weights.set(key, { a: lo, b: hi, weight: 1, notes: note ? [{ id: c.id, text: note }] : [] });
     }
   }
   return [...weights.values()];

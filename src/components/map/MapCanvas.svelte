@@ -6,6 +6,8 @@
   import { zoom, type D3ZoomEvent } from 'd3-zoom';
   import { navigate } from '../../stores/route';
   import { getSonnet } from '../../data/sonnets';
+  import { updateConnectionNote } from '../../stores/userData';
+  import { isEditingAllowed } from '../../stores/auth';
   import type { MapEdge } from '../../lib/connections';
 
   interface Node extends SimulationNodeDatum {
@@ -36,6 +38,26 @@
   let hoveredNode = $state<number | null>(null);
 
   let simulation: ReturnType<typeof forceSimulation<Node>> | undefined;
+
+  // The edge-note popup sits at the bottom of the canvas, not right next to
+  // the line itself, so hiding it the instant the cursor leaves the line
+  // would make it impossible to ever reach (and edit a note inside) — a
+  // short grace period lets the cursor travel there before it disappears.
+  let hideEdgeTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function cancelHideEdge() {
+    if (hideEdgeTimer) {
+      clearTimeout(hideEdgeTimer);
+      hideEdgeTimer = undefined;
+    }
+  }
+
+  function scheduleHideEdge() {
+    cancelHideEdge();
+    hideEdgeTimer = setTimeout(() => {
+      hoveredEdge = null;
+    }, 250);
+  }
 
   function maxWeight() {
     return edges.reduce((m, e) => Math.max(m, e.weight), 1);
@@ -98,7 +120,10 @@
     return () => mq.removeEventListener('change', onChange);
   });
 
-  onDestroy(() => simulation?.stop());
+  onDestroy(() => {
+    simulation?.stop();
+    cancelHideEdge();
+  });
 
   function dragHandlers(node: Node) {
     return {
@@ -142,10 +167,11 @@
           class="edge"
           stroke-width={0.75 + (Math.log(l.weight + 1) / Math.log(mw + 1)) * 2}
           onmouseenter={() => {
+            cancelHideEdge();
             const [a, b] = l.id.split('-').map(Number);
             hoveredEdge = edges.find((e) => e.a === a && e.b === b) ?? { a, b, weight: 1, notes: [] };
           }}
-          onmouseleave={() => (hoveredEdge = null)}
+          onmouseleave={scheduleHideEdge}
           role="presentation"
         />
       {/each}
@@ -175,10 +201,20 @@
       <p class="edge-title">Sonnet {hoveredNode}{s ? ` — ${s.lines[0]}` : ''}</p>
     </div>
   {:else if hoveredEdge}
-    <div class="edge-label">
-      <p class="edge-title">Sonnet {hoveredEdge.a} — Sonnet {hoveredEdge.b}</p>
-      {#each hoveredEdge.notes as note}
-        <p class="edge-note">&ldquo;{note}&rdquo;</p>
+    {@const edge = hoveredEdge}
+    <div class="edge-label" onmouseenter={cancelHideEdge} onmouseleave={scheduleHideEdge} role="presentation">
+      <p class="edge-title">Sonnet {edge.a} — Sonnet {edge.b}</p>
+      {#each edge.notes as note (note.id)}
+        {#if $isEditingAllowed}
+          <textarea
+            class="edge-note-input"
+            value={note.text}
+            oninput={(e) => updateConnectionNote(note.id, (e.target as HTMLTextAreaElement).value)}
+            rows="2"
+          ></textarea>
+        {:else}
+          <p class="edge-note">&ldquo;{note.text}&rdquo;</p>
+        {/if}
       {/each}
     </div>
   {/if}
@@ -261,5 +297,23 @@
     font-size: 12px;
     color: var(--color-text);
     text-align: center;
+  }
+
+  .edge-note-input {
+    display: block;
+    width: 200px;
+    margin-top: 4px;
+    resize: none;
+    font-family: var(--font-serif);
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--color-text);
+    border: 1px solid var(--color-rule);
+    padding: 3px 5px;
+  }
+
+  .edge-note-input:focus {
+    outline: none;
+    border-color: var(--color-text-dim);
   }
 </style>
