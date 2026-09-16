@@ -32,17 +32,6 @@ export function sonnetSketch(size: number, initialLines: string[], fontScale = 0
     let widthsCum: number[] = [];
     let scrollOffset = 0;
 
-    // Secondary path: a fainter, counter-rotating depth layer carrying a small
-    // repeating motif rather than sonnet text — pure ornament, never competes
-    // for attention with the primary flow.
-    let path2Pts: { x: number; y: number }[] = [];
-    let arcLen2: number[] = [];
-    let angles2: number[] = [];
-    let path2Total = 0;
-    let ornamentText = '';
-    let ornamentWidths: number[] = [];
-    let scrollOffset2 = 0;
-
     let noiseTime = 0;
     let pendingLines: string[] | null = null;
     const speed = 0.6;
@@ -127,14 +116,6 @@ export function sonnetSketch(size: number, initialLines: string[], fontScale = 0
       arcLen = primary.arc;
       angles = primary.angles;
       pathTotal = primary.total;
-
-      // Tighter, counter-rotating twin — smaller curl amplitude and a faster
-      // ripple so it reads as a distinct, quieter echo of the primary curl.
-      const secondary = tracePath({ d1: 1.1, k2: 5, d2: 0.15, n: 2000, reverse: true });
-      path2Pts = secondary.pts;
-      arcLen2 = secondary.arc;
-      angles2 = secondary.angles;
-      path2Total = secondary.total;
     }
 
     // Builds the flow text word-by-word (cycling back to the start with a small
@@ -186,34 +167,6 @@ export function sonnetSketch(size: number, initialLines: string[], fontScale = 0
       widthsCum = cum;
     }
 
-    // Lays a short recurring motif around the whole secondary path once — it
-    // doesn't depend on the sonnet's text, so (unlike buildFlowText) this only
-    // needs to run once after the path exists, not on every setText().
-    function buildOrnament() {
-      p.textFont(font || 'Georgia');
-      p.textSize(fontSize * 0.8);
-
-      const motif = '· ';
-      const limit = Math.max(path2Total - 10, 0);
-      let t = '';
-      const cum: number[] = [0];
-      let acc = 0;
-
-      while (acc < limit) {
-        let width = 0;
-        for (const ch of motif) width += charStep(ch);
-        if (acc + width > limit) break;
-        for (const ch of motif) {
-          acc += charStep(ch);
-          t += ch;
-          cum.push(acc);
-        }
-      }
-
-      ornamentText = t;
-      ornamentWidths = cum;
-    }
-
     p.setup = async () => {
       const canvas = p.createCanvas(size, size);
       canvas.style('pointer-events', 'none');
@@ -225,7 +178,6 @@ export function sonnetSketch(size: number, initialLines: string[], fontScale = 0
         font = undefined;
       }
       buildPath();
-      buildOrnament();
       // setText() may have already been called (e.g. hovering a row) while this
       // async setup was still awaiting the font — apply whatever came in during
       // that window instead of the stale initial lines.
@@ -242,28 +194,6 @@ export function sonnetSketch(size: number, initialLines: string[], fontScale = 0
       p.push();
       p.translate(p.width / 2, p.height / 2);
       p.noStroke();
-
-      // Faint counter-rotating secondary path first, so the primary flow draws
-      // on top of it — a quiet depth layer, not a second focal point.
-      if (ornamentText && path2Total > 0) {
-        p.push();
-        p.fill(120, 220, 50, 70);
-        p.textFont(font || 'Georgia');
-        p.textSize(fontSize * 0.8);
-        const path2: TracedPath = { pts: path2Pts, arc: arcLen2, angles: angles2, total: path2Total };
-        for (let j = 0; j < ornamentText.length; j++) {
-          const ch = ornamentText[j];
-          if (ch === ' ') continue;
-          const pt = pointAtDistance(path2, ornamentWidths[j] + scrollOffset2);
-          p.push();
-          p.translate(pt.x, pt.y);
-          p.rotate(pt.angle);
-          p.text(ch, 0, 0);
-          p.pop();
-        }
-        p.pop();
-        scrollOffset2 = (scrollOffset2 - speed * 0.6 + path2Total) % path2Total;
-      }
 
       // Subtle noise-driven brightness drift — still unmistakably the same
       // lime green, just breathing rather than a flat constant fill.
